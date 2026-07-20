@@ -9,6 +9,19 @@ import (
 	"github.com/dinhbaokhanh/AcaSocial/gateway/internal/config"
 )
 
+// StripInternalHeaders xóa các header nội bộ do client cố tình gửi lên.
+// Đặt ở tầng global (app.go) để đảm bảo mọi route đều được bảo vệ,
+// kể cả route không có auth_required.
+// Nếu để per-route thì route không có auth có thể bị bypass.
+func StripInternalHeaders(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		r.Header.Del("X-User-ID")
+		r.Header.Del("X-User-Role")
+		r.Header.Del("X-Internal-Token") // dự phòng cho service-to-service auth sau này
+		next.ServeHTTP(w, r)
+	})
+}
+
 // Middleware là kiểu hàm nhận handler và trả về handler đã được bọc thêm logic.
 type Middleware func(http.Handler) http.Handler
 

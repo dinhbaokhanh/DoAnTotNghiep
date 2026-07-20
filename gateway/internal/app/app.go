@@ -23,7 +23,8 @@ func New(cfg *config.GatewayConfig) (*App, error) {
 		return nil, err
 	}
 
-	// RequestID -> RequestValidation -> AuditLogger -> Recoverer -> RequestLogger -> CORS -> Router
+	// RequestID -> StripInternalHeaders -> RequestValidation -> AuditLogger -> Recoverer -> RequestLogger -> CORS -> Router
+	// StripInternalHeaders phải ở tầng global để không route nào bị bypass
 	handler := middleware.Chain(
 		router,
 		middleware.CORSProvider(cfg.CORS),
@@ -31,6 +32,7 @@ func New(cfg *config.GatewayConfig) (*App, error) {
 		middleware.Recoverer,
 		middleware.AuditLoggerMiddleware,
 		middleware.RequestValidationMiddleware,
+		middleware.StripInternalHeaders,
 		middleware.RequestIDMiddleware,
 	)
 

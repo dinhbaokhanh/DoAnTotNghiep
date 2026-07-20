@@ -77,8 +77,8 @@ func NewRouter(cfg *config.GatewayConfig) (http.Handler, error) {
 		}
 		fmt.Printf("[Router] %-35s -> %s\n", pattern, strings.Join(targetHosts, ", "))
 
-		// reverseProxy -> sanitize -> Cache -> Auth -> Strip -> RateLimit
-		// Thực thi (ngoài vào trong): RateLimit -> Strip -> Auth -> Cache -> sanitize -> proxy
+		// Middleware chain per-route (ngoài vào trong):
+		// RateLimit → Auth → Cache → sanitize → proxy
 		var handler http.Handler = reverseProxy
 
 		// 1. Xóa header nhạy cảm từ backend trước khi trả về cho client
@@ -94,16 +94,13 @@ func NewRouter(cfg *config.GatewayConfig) (http.Handler, error) {
 			handler = middleware.AuthMiddlewareProvider(cfg.JWT, endpoint.RequiredRoles)(handler)
 		}
 
-		// 4. Xóa header định danh người dùng do client tự chèn vào
-		inner := handler
-		handler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			r.Header.Del("X-User-ID")
-			r.Header.Del("X-User-Role")
-			inner.ServeHTTP(w, r)
-		})
-
-		// 5. Rate limiting theo IP từ cấu hình gateway.json
-		handler = middleware.RateLimitMiddlewareProvider(cfg.MaxRequestsPerMinute)(handler)
+		// 4. Rate limiting — dùng giới hạn riêng của route nếu có, fallback về global
+		// Endpoint nhạy cảm (login, otp) nên có giới hạn thấp hơn global
+		routeLimit := cfg.MaxRequestsPerMinute
+		if endpoint.MaxRequestsPerMinute > 0 {
+			routeLimit = endpoint.MaxRequestsPerMinute
+		}
+		handler = middleware.RateLimitMiddlewareProvider(routeLimit)(handler)
 
 		mux.Handle(pattern, handler)
 	}
