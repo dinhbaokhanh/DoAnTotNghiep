@@ -36,8 +36,9 @@ func main() {
 	}
 	middleware.InitRedis(redisAddr)
 
-	// Nạp JWT_SECRET vào bộ nhớ — crash nếu thiếu để đảm bảo an toàn
-	middleware.InitJWT()
+	// Nạp JWT_SECRET vào bộ nhớ và enforce issuer/audience từ gateway.json
+	// Crash nếu thiếu secret để đảm bảo an toàn
+	middleware.InitJWT(cfg.JWT)
 
 	// Nạp INTERNAL_SERVICE_TOKEN — dùng để xác minh request giữa Gateway và service
 	proxy.InitInternalToken()

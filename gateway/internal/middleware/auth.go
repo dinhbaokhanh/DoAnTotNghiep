@@ -8,19 +8,27 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/dinhbaokhanh/AcaSocial/gateway/internal/config"
 	"github.com/golang-jwt/jwt/v5"
 )
 
 // jwtSecretCache lưu JWT_SECRET một lần khi khởi động, tránh gọi os.Getenv mỗi request.
 var jwtSecretCache []byte
 
-// InitJWT đọc JWT_SECRET từ env và cache lại. Crash ngay nếu thiếu.
-func InitJWT() {
+// jwtIssuer và jwtAudience được đọc từ gateway.json, dùng để enforce claim khi verify token.
+var jwtIssuer string
+var jwtAudience string
+
+// InitJWT đọc JWT_SECRET từ env và issuer/audience từ config, cache lại.
+// Crash ngay nếu thiếu secret để đảm bảo Gateway không khởi động ở trạng thái không an toàn.
+func InitJWT(cfg config.JWTConfig) {
 	secret := os.Getenv("JWT_SECRET")
 	if secret == "" {
 		panic("CRITICAL: Thiếu biến môi trường JWT_SECRET — Gateway từ chối khởi động!")
 	}
 	jwtSecretCache = []byte(secret)
+	jwtIssuer = cfg.Issuer
+	jwtAudience = cfg.Audience
 }
 
 // AuthMiddlewareProvider xác thực JWT và kiểm tra RBAC cho từng route.
@@ -42,13 +50,20 @@ func AuthMiddlewareProvider(requiredRoles []string) func(http.Handler) http.Hand
 			tokenStr := strings.TrimPrefix(authHeader, "Bearer ")
 
 			// Dùng secret đã cache, chỉ verify chữ ký HS256 và expiry.
-			// Không check issuer/audience vì identity-service không set các claim đó.
+			// Enforce issuer và audience nếu được cấu hình trong gateway.json.
 			jwtSecret := jwtSecretCache
-			parser := jwt.NewParser(
+			parserOpts := []jwt.ParserOption{
 				jwt.WithValidMethods([]string{"HS256"}),
 				jwt.WithExpirationRequired(),
 				jwt.WithJSONNumber(),
-			)
+			}
+			if jwtIssuer != "" {
+				parserOpts = append(parserOpts, jwt.WithIssuer(jwtIssuer))
+			}
+			if jwtAudience != "" {
+				parserOpts = append(parserOpts, jwt.WithAudience(jwtAudience))
+			}
+			parser := jwt.NewParser(parserOpts...)
 
 			token, err := parser.Parse(tokenStr, func(token *jwt.Token) (interface{}, error) {
 				if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {

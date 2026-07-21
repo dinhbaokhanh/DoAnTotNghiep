@@ -72,7 +72,7 @@ export class AuthController {
   @ApiResponse({ status: 200, description: 'Đăng xuất thành công.' })
   @ApiResponse({ status: 401, description: 'Token không hợp lệ.' })
   logout(@Request() req) {
-    return this.authService.logout(req.user.id, req.user.jti);
+    return this.authService.logout(req.user.id, req.user.jti, req.user.exp);
   }
 
   @Post('forgot-password')

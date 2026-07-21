@@ -1,6 +1,8 @@
 import {
   BadRequestException,
   ConflictException,
+  HttpException,
+  HttpStatus,
   Inject,
   Injectable,
   NotFoundException,
@@ -94,20 +96,38 @@ export class AuthService {
 
   /**
    * Gửi lại OTP xác thực đăng ký cho người dùng chưa kích hoạt.
+   * Cooldown 60 giây giữa các lần gửi để ngăn kẻ tấn công dùng endpoint này
+   * như một công cụ spam email đến người dùng khác.
+   * createOtp() reset fail counter và lock cũ — đây là hành vi đúng khi user chủ động yêu cầu OTP mới.
    */
   async resendOtp(email: string): Promise<{ message: string }> {
     const user = await this.userRepo.findOne({ where: { email } });
     if (!user) throw new NotFoundException('User not found');
     if (user.isVerified) throw new BadRequestException('Account already verified');
 
+    // Kiểm tra cooldown: chặn gửi lại nếu chưa đủ 60 giây kể từ lần cuối
+    const cooldownKey = `otp_cooldown:register:${email}`;
+    const onCooldown = await this.redis.exists(cooldownKey);
+    if (onCooldown) {
+      const ttl = await this.redis.ttl(cooldownKey);
+      throw new HttpException(
+        `Vui lòng đợi ${ttl} giây trước khi gửi lại OTP.`,
+        HttpStatus.TOO_MANY_REQUESTS,
+      );
+    }
+
     const otp = await this.otpService.createOtp(`register:${email}`, 300);
     await this.mailService.sendOtp(email, otp, 'Xác thực đăng ký tài khoản');
+
+    // Đặt cooldown SAU khi gửi thành công — tránh block khi mail server lỗi
+    await this.redis.set(cooldownKey, '1', 'EX', 60);
 
     return { message: 'OTP resent successfully' };
   }
 
   /**
    * Đăng nhập bằng email/username + password.
+   * Ghi lại thời điểm đăng nhập thành công vào lastLoginAt để hỗ trợ audit và UI.
    */
   async login(dto: LoginDto): Promise<{ accessToken: string; refreshToken: string }> {
     // Phân biệt đăng nhập bằng email hay username dựa vào ký tự '@'
@@ -123,11 +143,28 @@ export class AuthService {
     const passwordMatch = await bcrypt.compare(dto.password, user.passwordHash);
     if (!passwordMatch) throw new UnauthorizedException('Invalid credentials');
 
+    // Cập nhật lastLoginAt không đồng bộ — không block việc trả token về client
+    // Fire-and-forget: nếu update lỗi cũng không ảnh hưởng đến flow đăng nhập
+    this.userRepo.update(user.id, { lastLoginAt: new Date() }).catch(() => {});
+
     return this.generateTokens(user);
   }
 
   /**
    * Cấp lại cặp token mới từ refreshToken còn hiệu lực.
+   *
+   * Reuse detection (phát hiện token bị đánh cắp):
+   * Refresh token rotation đảm bảo mỗi token chỉ dùng được một lần.
+   * Nếu token hợp lệ đã bị revoke (= đã dùng rồi) mà vẫn được gửi lên,
+   * có hai khả năng: client dùng token cũ (bug) hoặc token bị đánh cắp và kẻ tấn công
+   * đã dùng trước. Trong cả hai trường hợp, phản ứng an toàn nhất là thu hồi
+   * TOÀN BỘ session của user để buộc đăng nhập lại trên tất cả thiết bị.
+   *
+   * Flow:
+   *   Token không tồn tại trong DB  → 401 (token giả hoặc đã xóa)
+   *   Token tồn tại + đã revoke      → REUSE DETECTED → revoke all sessions → 401
+   *   Token tồn tại + hết hạn        → 401 (expired)
+   *   Token tồn tại + hợp lệ         → revoke cũ → cấp cặp mới
    */
   async refreshToken(dto: RefreshTokenDto): Promise<{ accessToken: string; refreshToken: string }> {
     const tokenHash = createHash('sha256').update(dto.refreshToken).digest('hex');
@@ -137,11 +174,29 @@ export class AuthService {
       relations: ['user'],
     });
 
-    if (!stored || stored.revoked || stored.expiresAt < new Date()) {
+    // Token không tồn tại trong DB — hash sai hoặc đã bị xóa
+    if (!stored) {
       throw new UnauthorizedException('Invalid or expired refresh token');
     }
 
-    // Revoke token cũ ngay lập tức trước khi cấp token mới
+    // Token đã bị revoke mà vẫn được dùng lại → dấu hiệu token bị đánh cắp.
+    // Thu hồi toàn bộ session để giới hạn thiệt hại — user sẽ cần đăng nhập lại.
+    if (stored.revoked) {
+      await this.refreshTokenRepo.update(
+        { userId: stored.userId, revoked: false },
+        { revoked: true },
+      );
+      throw new UnauthorizedException(
+        'Security alert: refresh token reuse detected. All sessions have been revoked. Please login again.',
+      );
+    }
+
+    // Token hết hạn tự nhiên
+    if (stored.expiresAt < new Date()) {
+      throw new UnauthorizedException('Invalid or expired refresh token');
+    }
+
+    // Token hợp lệ — revoke ngay trước khi cấp token mới (rotation)
     stored.revoked = true;
     await this.refreshTokenRepo.save(stored);
 
@@ -150,14 +205,17 @@ export class AuthService {
 
   /**
    * Đăng xuất: vô hiệu hóa access token hiện tại và toàn bộ refresh token của user.
-   * jti (JWT ID) được thêm vào Redis blacklist với TTL bằng thời hạn còn lại của access token.
+   * jti (JWT ID) được thêm vào Redis blacklist với TTL bằng thời gian còn lại thực tế
+   * của access token (exp - now), thay vì TTL cố định từ config.
+   * Điều này tránh blacklist entry tồn tại lâu hơn cần thiết, tiết kiệm bộ nhớ Redis.
    */
-  async logout(userId: string, jti: string): Promise<{ message: string }> {
+  async logout(userId: string, jti: string, exp: number): Promise<{ message: string }> {
     // Revoke toàn bộ refresh token — đăng xuất khỏi tất cả thiết bị
     await this.refreshTokenRepo.update({ userId, revoked: false }, { revoked: true });
 
-    // Blacklist jti trong Redis để Gateway từ chối access token
-    const ttl = parseTtl(this.config.get<string>('JWT_ACCESS_EXPIRES_IN'));
+    // TTL = thời gian còn lại thực tế của token (giây), tối thiểu 1 giây
+    // exp là Unix timestamp (giây) từ JWT payload
+    const ttl = Math.max(1, exp - Math.floor(Date.now() / 1000));
     await this.redis.set(`blacklist:${jti}`, '1', 'EX', ttl);
 
     return { message: 'Logged out successfully' };
@@ -182,7 +240,10 @@ export class AuthService {
 
   /**
    * Bước 2 quên mật khẩu: xác minh OTP rồi cập nhật mật khẩu mới.
-   * Sau khi đổi mật khẩu, revoke toàn bộ refresh token để buộc đăng nhập lại trên mọi thiết bị.
+   * Sau khi đổi mật khẩu:
+   * - Revoke toàn bộ refresh token để buộc đăng nhập lại trên mọi thiết bị.
+   * - Set passwordChangedAt = now để JwtStrategy từ chối mọi access token cũ
+   *   (access token được phát hành trước thời điểm này sẽ không còn hiệu lực).
    */
   async resetPassword(dto: ResetPasswordDto): Promise<{ message: string }> {
     const user = await this.userRepo.findOne({ where: { email: dto.email } });
@@ -192,6 +253,8 @@ export class AuthService {
     if (!valid) throw new BadRequestException('Invalid or expired OTP');
 
     user.passwordHash = await bcrypt.hash(dto.newPassword, 10);
+    // Đánh dấu thời điểm đổi mật khẩu — JwtStrategy sẽ từ chối token phát hành trước mốc này
+    user.passwordChangedAt = new Date();
     await this.userRepo.save(user);
 
     // Buộc đăng nhập lại trên tất cả thiết bị sau khi đổi mật khẩu

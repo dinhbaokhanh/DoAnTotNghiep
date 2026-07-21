@@ -56,7 +56,7 @@ export class UsersController {
   @ApiResponse({ status: 200, description: 'Đổi mật khẩu thành công.' })
   @ApiResponse({ status: 400, description: 'Mật khẩu hiện tại sai hoặc mật khẩu mới không khớp.' })
   changePassword(@Request() req, @Body() dto: ChangePasswordDto) {
-    return this.usersService.changePassword(req.user, dto, req.user.jti);
+    return this.usersService.changePassword(req.user, dto, req.user.jti, req.user.exp);
   }
 
   @Post('change-email/request')
@@ -87,6 +87,6 @@ export class UsersController {
   @ApiResponse({ status: 200, description: 'Tài khoản đã bị xóa.' })
   @ApiResponse({ status: 401, description: 'Mật khẩu xác nhận không đúng.' })
   deleteAccount(@Request() req, @Body() dto: DeleteAccountDto) {
-    return this.usersService.deleteAccount(req.user, dto, req.user.jti);
+    return this.usersService.deleteAccount(req.user, dto, req.user.jti, req.user.exp);
   }
 }

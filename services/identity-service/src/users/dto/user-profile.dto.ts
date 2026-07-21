@@ -15,4 +15,5 @@ export class UserProfileDto {
   role: Role;
   isVerified: boolean;
   createdAt: Date;
+  lastLoginAt: Date | null;
 }

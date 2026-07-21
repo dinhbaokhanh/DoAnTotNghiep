@@ -23,8 +23,10 @@ func New(cfg *config.GatewayConfig) (*App, error) {
 		return nil, err
 	}
 
-	// RequestID -> StripInternalHeaders -> RequestValidation -> AuditLogger -> Recoverer -> RequestLogger -> CORS -> Router
-	// StripInternalHeaders phải ở tầng global để không route nào bị bypass
+	// SecurityHeaders -> RequestID -> StripInternalHeaders -> RequestValidation -> AuditLogger -> Recoverer -> RequestLogger -> CORS -> Router
+	// SecurityHeadersMiddleware đứng ngoài cùng để inject header vào MỌI response,
+	// kể cả 4xx/5xx trả về từ các middleware bên trong (rate limit, auth, validation...).
+	// StripInternalHeaders phải ở tầng global để không route nào bị bypass.
 	handler := middleware.Chain(
 		router,
 		middleware.CORSProvider(cfg.CORS),
@@ -34,6 +36,7 @@ func New(cfg *config.GatewayConfig) (*App, error) {
 		middleware.RequestValidationMiddleware,
 		middleware.StripInternalHeaders,
 		middleware.RequestIDMiddleware,
+		middleware.SecurityHeadersMiddleware,
 	)
 
 	return &App{

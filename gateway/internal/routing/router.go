@@ -17,31 +17,51 @@ import (
 func NewRouter(cfg *config.GatewayConfig) (http.Handler, error) {
 	mux := http.NewServeMux()
 
-	// Route kiểm tra trạng thái Gateway + Redis
-	mux.HandleFunc("GET /health", func(w http.ResponseWriter, _ *http.Request) {
-		status := "ok"
-		redisStatus := "ok"
-		httpStatus := http.StatusOK
+	// Thu thập danh sách unique host từ tất cả endpoint để dùng trong health check.
+	// Dùng map để dedup — nhiều route có thể trỏ về cùng một service.
+	backendHosts := collectBackendHosts(cfg)
 
-		// Kiểm tra kết nối Redis thực sự bằng Ping với timeout ngắn
+	// Route kiểm tra trạng thái Gateway + Redis + các downstream service
+	mux.HandleFunc("GET /health", func(w http.ResponseWriter, _ *http.Request) {
+		overallStatus := "ok"
+		httpStatus := http.StatusOK
+		checks := map[string]string{}
+
+		// 1. Kiểm tra Redis
 		if middleware.RedisClient != nil {
 			ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 			defer cancel()
 			if err := middleware.RedisClient.Ping(ctx).Err(); err != nil {
-				redisStatus = "unreachable"
-				status = "degraded"
+				checks["redis"] = "unreachable"
+				overallStatus = "degraded"
 				httpStatus = http.StatusServiceUnavailable
+			} else {
+				checks["redis"] = "ok"
 			}
 		} else {
-			redisStatus = "not_configured"
+			checks["redis"] = "not_configured"
 		}
 
+		// 2. Kiểm tra từng downstream service bằng cách gọi /health của chúng
+		// Dùng HTTP client với timeout ngắn để không block lâu
+		httpClient := &http.Client{Timeout: 2 * time.Second}
+		for name, host := range backendHosts {
+			url := host + "/health"
+			resp, err := httpClient.Get(url)
+			if err != nil || resp.StatusCode >= 500 {
+				checks[name] = "unreachable"
+				overallStatus = "degraded"
+				httpStatus = http.StatusServiceUnavailable
+			} else {
+				checks[name] = "ok"
+				resp.Body.Close()
+			}
+		}
+
+		checks["status"] = overallStatus
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(httpStatus)
-		_ = json.NewEncoder(w).Encode(map[string]string{
-			"status": status,
-			"redis":  redisStatus,
-		})
+		_ = json.NewEncoder(w).Encode(checks)
 	})
 
 	// Các route khác sẽ được load từ file config
@@ -106,4 +126,25 @@ func NewRouter(cfg *config.GatewayConfig) (http.Handler, error) {
 	}
 
 	return mux, nil
+}
+
+// collectBackendHosts thu thập danh sách unique host từ tất cả endpoint trong config.
+// Key là tên dịch vụ (phần hostname), value là base URL để gọi /health.
+// Dùng map để dedup — nhiều route có thể trỏ về cùng một service.
+func collectBackendHosts(cfg *config.GatewayConfig) map[string]string {
+	seen := make(map[string]struct{})
+	result := make(map[string]string)
+	for _, endpoint := range cfg.Endpoints {
+		for _, backend := range endpoint.Backend {
+			for _, host := range backend.Host {
+				if _, exists := seen[host]; exists {
+					continue
+				}
+				seen[host] = struct{}{}
+				// Dùng host làm cả key lẫn value — key chỉ để hiển thị trong response
+				result[host] = host
+			}
+		}
+	}
+	return result
 }

@@ -1,4 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Transform } from 'class-transformer';
 import {
   IsEmail,
   IsNotEmpty,
@@ -20,6 +21,10 @@ export class RegisterDto {
   username: string;
 
   @ApiProperty({ example: 'Nguyễn Văn A', description: 'Họ và tên đầy đủ' })
+  // Strip HTML tags và trim whitespace trước khi validate — ngăn stored XSS và HTML injection.
+  @Transform(({ value }) =>
+    typeof value === 'string' ? value.replace(/<[^>]*>/g, '').trim() : value,
+  )
   @IsNotEmpty()
   @MaxLength(100)
   fullName: string;

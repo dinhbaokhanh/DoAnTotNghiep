@@ -19,6 +19,11 @@ import { JwtStrategy } from './strategies/jwt.strategy';
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({
         secret: config.get<string>('JWT_SECRET'),
+        // Giá trị mặc định fallback để không crash nếu biến môi trường chưa được set
+        signOptions: {
+          issuer: config.get<string>('JWT_ISSUER') ?? 'ptit-backend',
+          audience: config.get<string>('JWT_AUDIENCE') ?? 'ptit-gateway',
+        },
       }),
     }),
     MailModule,

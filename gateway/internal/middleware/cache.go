@@ -3,7 +3,7 @@ package middleware
 import (
 	"bytes"
 	"context"
-	"crypto/md5"
+	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -70,7 +70,10 @@ func CacheMiddleware(ttlSeconds int) func(http.Handler) http.Handler {
 				return
 			}
 			rawKey := fmt.Sprintf("%s:%s", r.URL.RequestURI(), userID)
-			hash := md5.Sum([]byte(rawKey))
+			// SHA-256 thay MD5: MD5 có collision đã được chứng minh thực tế.
+			// Collision trên cache key khiến user A nhận response đã cache của user B — data leak.
+			// SHA-256 collision-resistant trong mọi threat model thực tế.
+			hash := sha256.Sum256([]byte(rawKey))
 			cacheKey := "cache:GET:" + hex.EncodeToString(hash[:])
 
 			ctx := context.Background()

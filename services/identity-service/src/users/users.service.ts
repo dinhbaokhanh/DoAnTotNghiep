@@ -5,13 +5,11 @@ import {
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import * as bcrypt from 'bcrypt';
 import Redis from 'ioredis';
 import { Repository } from 'typeorm';
 import { REDIS_CLIENT } from '../common/redis.provider';
-import { parseTtl } from '../common/parse-ttl.util';
 import { MailService } from '../mail/mail.service';
 import { OtpService } from '../otp/otp.service';
 import { RefreshToken } from './refresh-token.entity';
@@ -40,7 +38,6 @@ export class UsersService {
     @InjectRepository(RefreshToken)
     private refreshTokenRepo: Repository<RefreshToken>,
     @Inject(REDIS_CLIENT) private redis: Redis,
-    private config: ConfigService,
     private mailService: MailService,
     private otpService: OtpService,
   ) {}
@@ -61,6 +58,7 @@ export class UsersService {
       role: user.role,
       isVerified: user.isVerified,
       createdAt: user.createdAt,
+      lastLoginAt: user.lastLoginAt ?? null,
     };
   }
 
@@ -84,12 +82,14 @@ export class UsersService {
    * Đổi mật khẩu.
    * Sau khi đổi thành công:
    * - Đăng xuất tất cả thiết bị
-   * - Blacklist jti của access token hiện tại trong Redis
+   * - Set passwordChangedAt = now để JwtStrategy từ chối token phát hành trước mốc này
+   * - Blacklist jti của access token hiện tại với TTL thực tế còn lại
    */
   async changePassword(
     user: User,
     dto: ChangePasswordDto,
     jti: string,
+    exp: number,
   ): Promise<{ message: string }> {
     const match = await bcrypt.compare(dto.currentPassword, user.passwordHash);
     if (!match) throw new BadRequestException('Current password is incorrect');
@@ -101,11 +101,14 @@ export class UsersService {
     }
 
     user.passwordHash = await bcrypt.hash(dto.newPassword, 10);
+    // Đánh dấu thời điểm đổi mật khẩu — JwtStrategy từ chối token phát hành trước mốc này
+    user.passwordChangedAt = new Date();
     await this.userRepo.save(user);
 
     await this.refreshTokenRepo.update({ userId: user.id }, { revoked: true });
 
-    const ttl = parseTtl(this.config.get<string>('JWT_ACCESS_EXPIRES_IN'));
+    // TTL = thời gian còn lại thực tế của token, tối thiểu 1 giây
+    const ttl = Math.max(1, exp - Math.floor(Date.now() / 1000));
     await this.redis.set(`blacklist:${jti}`, '1', 'EX', ttl);
 
     return { message: 'Password changed successfully. Please login again.' };
@@ -180,13 +183,15 @@ export class UsersService {
     user: User,
     dto: DeleteAccountDto,
     jti: string,
+    exp: number,
   ): Promise<{ message: string }> {
     const match = await bcrypt.compare(dto.password, user.passwordHash);
     if (!match) throw new UnauthorizedException('Incorrect password');
 
     await this.refreshTokenRepo.update({ userId: user.id }, { revoked: true });
 
-    const ttl = parseTtl(this.config.get<string>('JWT_ACCESS_EXPIRES_IN'));
+    // TTL = thời gian còn lại thực tế của token, tối thiểu 1 giây
+    const ttl = Math.max(1, exp - Math.floor(Date.now() / 1000));
     await this.redis.set(`blacklist:${jti}`, '1', 'EX', ttl);
 
     await this.userRepo.softDelete(user.id);
