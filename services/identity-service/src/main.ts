@@ -2,9 +2,14 @@ import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
+import { InternalTokenGuard } from './common/internal-token.guard';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+
+  // Chặn mọi request không đến từ Gateway (thiếu hoặc sai X-Internal-Token).
+  // Phải đăng ký trước ValidationPipe để guard chạy trước khi parse body.
+  app.useGlobalGuards(new InternalTokenGuard());
 
   app.useGlobalPipes(
     new ValidationPipe({
