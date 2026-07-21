@@ -8,7 +8,6 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/dinhbaokhanh/AcaSocial/gateway/internal/config"
 	"github.com/golang-jwt/jwt/v5"
 )
 
@@ -27,7 +26,7 @@ func InitJWT() {
 // AuthMiddlewareProvider xác thực JWT và kiểm tra RBAC cho từng route.
 // Sau khi xác thực thành công, inject X-User-ID và X-User-Role vào request header
 // để các service phía sau đọc mà không cần tự xác thực lại.
-func AuthMiddlewareProvider(jwtCfg config.JWTConfig, requiredRoles []string) func(http.Handler) http.Handler {
+func AuthMiddlewareProvider(requiredRoles []string) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 

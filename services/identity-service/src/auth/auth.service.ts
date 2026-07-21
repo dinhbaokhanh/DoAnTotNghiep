@@ -169,12 +169,15 @@ export class AuthService {
    */
   async forgotPassword(dto: ForgotPasswordDto): Promise<{ message: string }> {
     const user = await this.userRepo.findOne({ where: { email: dto.email } });
-    if (!user) throw new NotFoundException('Email not found');
 
-    const otp = await this.otpService.createOtp(`reset:${dto.email}`, 600);
-    await this.mailService.sendOtp(dto.email, otp, 'Đặt lại mật khẩu');
+    // Luôn trả về cùng một message dù email tồn tại hay không.
+    // Tránh user enumeration — hacker không biết được email nào đã đăng ký.
+    if (user) {
+      const otp = await this.otpService.createOtp(`reset:${dto.email}`, 600);
+      await this.mailService.sendOtp(dto.email, otp, 'Đặt lại mật khẩu');
+    }
 
-    return { message: 'OTP sent to your email' };
+    return { message: 'Nếu email tồn tại trong hệ thống, bạn sẽ nhận được mã OTP.' };
   }
 
   /**

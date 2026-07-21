@@ -67,12 +67,6 @@ export class UsersController {
     return this.usersService.requestChangeEmail(req.user, dto);
   }
 
-  @Post('change-email/resend')
-  @ApiOperation({ summary: 'Gửi lại OTP đổi email' })
-  resendChangeEmailOtp(@Request() req, @Body() dto: RequestChangeEmailDto) {
-    return this.usersService.requestChangeEmail(req.user, dto);
-  }
-
   @Post('change-email/confirm')
   @ApiOperation({ summary: 'Xác nhận đổi email (bước 2)', description: 'Xác minh OTP để cập nhật email mới.' })
   @ApiResponse({ status: 200, description: 'Email đã được cập nhật.' })

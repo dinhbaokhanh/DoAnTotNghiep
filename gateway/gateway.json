@@ -29,7 +29,6 @@
     { "endpoint": "/api/users/me/change-password",      "method": "PATCH", "auth_required": true, "max_requests_per_minute": 5, "backend": [{ "host": ["${IDENTITY_SERVICE_URL}"], "url_pattern": "/users/me/change-password" }] },
     { "endpoint": "/api/users/me/privacy",              "method": "PATCH", "auth_required": true, "backend": [{ "host": ["${IDENTITY_SERVICE_URL}"], "url_pattern": "/users/me/privacy" }] },
     { "endpoint": "/api/users/me/change-email/request", "method": "POST",  "auth_required": true, "max_requests_per_minute": 3, "backend": [{ "host": ["${IDENTITY_SERVICE_URL}"], "url_pattern": "/users/me/change-email/request" }] },
-    { "endpoint": "/api/users/me/change-email/resend",  "method": "POST",  "auth_required": true, "max_requests_per_minute": 3, "backend": [{ "host": ["${IDENTITY_SERVICE_URL}"], "url_pattern": "/users/me/change-email/resend" }] },
     { "endpoint": "/api/users/me/change-email/confirm", "method": "POST",  "auth_required": true, "max_requests_per_minute": 5, "backend": [{ "host": ["${IDENTITY_SERVICE_URL}"], "url_pattern": "/users/me/change-email/confirm" }] },
 
     { "endpoint": "/api/media/upload",  "method": "POST",   "auth_required": true,  "backend": [{ "host": ["${MEDIA_SERVICE_URL}"], "url_pattern": "/media/upload" }] },

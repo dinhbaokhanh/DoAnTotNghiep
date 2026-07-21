@@ -5,12 +5,28 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"net/url"
+	"os"
 	"strings"
 	"sync/atomic"
 	"time"
 
 	"github.com/sony/gobreaker/v2"
 )
+
+// internalTokenCache lưu INTERNAL_SERVICE_TOKEN một lần khi khởi động.
+// Token này được inject vào mọi request forward sang backend service
+// để service phân biệt request hợp lệ từ Gateway với request giả mạo.
+var internalTokenCache string
+
+// InitInternalToken đọc INTERNAL_SERVICE_TOKEN từ env và cache lại.
+// Nếu thiếu thì crash — không có token là không an toàn.
+func InitInternalToken() {
+	token := os.Getenv("INTERNAL_SERVICE_TOKEN")
+	if token == "" {
+		panic("CRITICAL: Thiếu biến môi trường INTERNAL_SERVICE_TOKEN — Gateway từ chối khởi động!")
+	}
+	internalTokenCache = token
+}
 
 // RoundRobinProxy phân phối request lần lượt qua nhiều backend (round-robin).
 type RoundRobinProxy struct {
@@ -101,6 +117,10 @@ func NewLoadBalancedProxy(targets []BackendTarget, endpointPattern string, timeo
 			if reqID := req.Header.Get("X-Request-ID"); reqID != "" {
 				req.Header.Set("X-Request-ID", reqID)
 			}
+
+			// Inject internal token để backend xác minh request đến từ Gateway,
+			// không phải từ attacker gọi thẳng vào service bỏ qua Gateway.
+			req.Header.Set("X-Internal-Token", internalTokenCache)
 		}
 
 		p.ErrorHandler = func(w http.ResponseWriter, r *http.Request, proxyErr error) {

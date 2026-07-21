@@ -11,6 +11,7 @@ import (
 	"github.com/dinhbaokhanh/AcaSocial/gateway/internal/app"
 	"github.com/dinhbaokhanh/AcaSocial/gateway/internal/config"
 	"github.com/dinhbaokhanh/AcaSocial/gateway/internal/middleware"
+	"github.com/dinhbaokhanh/AcaSocial/gateway/internal/proxy"
 	"github.com/joho/godotenv"
 )
 
@@ -37,6 +38,9 @@ func main() {
 
 	// Nạp JWT_SECRET vào bộ nhớ — crash nếu thiếu để đảm bảo an toàn
 	middleware.InitJWT()
+
+	// Nạp INTERNAL_SERVICE_TOKEN — dùng để xác minh request giữa Gateway và service
+	proxy.InitInternalToken()
 
 	// Khởi động goroutine dọn dẹp rate limiter, lưu hàm stop để gọi khi shutdown
 	stopRateLimiter := middleware.InitRateLimiter()
