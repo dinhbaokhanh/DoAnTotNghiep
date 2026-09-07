@@ -1,0 +1,22 @@
+.spinner {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ring {
+  display: block;
+  border-style: solid;
+  border-color: var(--color-neutral-200);
+  border-top-color: var(--color-primary-600);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+.sm .ring { width: 16px; height: 16px; border-width: 2px; }
+.md .ring { width: 24px; height: 24px; border-width: 2.5px; }
+.lg .ring { width: 36px; height: 36px; border-width: 3px; }
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}

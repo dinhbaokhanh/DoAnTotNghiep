@@ -17,6 +17,14 @@ import (
 func NewRouter(cfg *config.GatewayConfig) (http.Handler, error) {
 	mux := http.NewServeMux()
 
+	// Catch-all OPTIONS handler để xử lý CORS preflight.
+	// Go 1.22 ServeMux sẽ trả 405 cho OPTIONS nếu không có route khớp —
+	// điều đó xảy ra trước khi CORSProvider (tầng global) có cơ hội set header.
+	// Handler này chỉ cần tồn tại; CORSProvider ở app.go sẽ set đúng header và trả 204.
+	mux.HandleFunc("OPTIONS /", func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusNoContent)
+	})
+
 	// Thu thập danh sách unique host từ tất cả endpoint để dùng trong health check.
 	// Dùng map để dedup — nhiều route có thể trỏ về cùng một service.
 	backendHosts := collectBackendHosts(cfg)

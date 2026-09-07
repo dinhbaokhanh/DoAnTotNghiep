@@ -1,0 +1,234 @@
+/* ==========================================================================
+   AcaSocial Design Tokens
+   Single source of truth for all visual primitives.
+   ========================================================================== */
+
+:root {
+  /* -------------------------------------------------------------------------
+     COLOR — Primary (Red-Brown / Crimson) — AcaSocial brand
+     ------------------------------------------------------------------------- */
+  --color-primary-50:  #fdf2f2;
+  --color-primary-100: #fce4e4;
+  --color-primary-200: #f9c9c9;
+  --color-primary-300: #f4a0a0;
+  --color-primary-400: #ec6b6b;
+  --color-primary-500: #c0392b;
+  --color-primary-600: #a93226;
+  --color-primary-700: #922b21;
+  --color-primary-800: #7b241c;
+  --color-primary-900: #641e16;
+
+  /* -------------------------------------------------------------------------
+     COLOR — Verified / Accepted (Emerald)
+     Used for: accepted answers, peer verification, resolved status
+     ------------------------------------------------------------------------- */
+  --color-verified-50:  #ecfdf5;
+  --color-verified-100: #d1fae5;
+  --color-verified-200: #a7f3d0;
+  --color-verified-300: #6ee7b7;
+  --color-verified-400: #34d399;
+  --color-verified-500: #10b981;
+  --color-verified-600: #059669;
+  --color-verified-700: #047857;
+  --color-verified-800: #065f46;
+  --color-verified-900: #064e3b;
+
+  /* -------------------------------------------------------------------------
+     COLOR — Warning (Amber)
+     Used for: outdated references, pending review, unresolved disputes
+     ------------------------------------------------------------------------- */
+  --color-warning-50:  #fffbeb;
+  --color-warning-100: #fef3c7;
+  --color-warning-200: #fde68a;
+  --color-warning-300: #fcd34d;
+  --color-warning-400: #fbbf24;
+  --color-warning-500: #f59e0b;
+  --color-warning-600: #d97706;
+  --color-warning-700: #b45309;
+  --color-warning-800: #92400e;
+  --color-warning-900: #78350f;
+
+  /* -------------------------------------------------------------------------
+     COLOR — Destructive / Integrity (Red)
+     Used for: plagiarism flags, moderation violations, destructive actions
+     ------------------------------------------------------------------------- */
+  --color-destructive-50:  #fef2f2;
+  --color-destructive-100: #fee2e2;
+  --color-destructive-200: #fecaca;
+  --color-destructive-300: #fca5a5;
+  --color-destructive-400: #f87171;
+  --color-destructive-500: #ef4444;
+  --color-destructive-600: #dc2626;
+  --color-destructive-700: #b91c1c;
+  --color-destructive-800: #991b1b;
+  --color-destructive-900: #7f1d1d;
+
+  /* -------------------------------------------------------------------------
+     COLOR — AI / RAG (Cyan)
+     Used for: AI synthesis, retrieved context, AI citations
+     ------------------------------------------------------------------------- */
+  --color-ai-50:  #ecfeff;
+  --color-ai-100: #cffafe;
+  --color-ai-200: #a5f3fc;
+  --color-ai-300: #67e8f9;
+  --color-ai-400: #22d3ee;
+  --color-ai-500: #06b6d4;
+  --color-ai-600: #0891b2;
+  --color-ai-700: #0e7490;
+  --color-ai-800: #155e75;
+  --color-ai-900: #164e63;
+
+  /* -------------------------------------------------------------------------
+     COLOR — Neutral (Slate/Warm Gray)
+     ------------------------------------------------------------------------- */
+  --color-neutral-50:  #f8f7f4;
+  --color-neutral-100: #f1f0ec;
+  --color-neutral-200: #e4e2dd;
+  --color-neutral-300: #cbc8c0;
+  --color-neutral-400: #9c998f;
+  --color-neutral-500: #6b6860;
+  --color-neutral-600: #4a4842;
+  --color-neutral-700: #33312d;
+  --color-neutral-800: #211f1c;
+  --color-neutral-900: #1a1917;
+
+  /* -------------------------------------------------------------------------
+     COLOR — Semantic Surfaces
+     ------------------------------------------------------------------------- */
+  --color-bg:            var(--color-neutral-50);   /* warm off-white — not pure white */
+  --color-surface:       #ffffff;
+  --color-surface-hover: var(--color-neutral-100);
+  --color-surface-raised:#ffffff;
+  --color-outline:       var(--color-neutral-200);
+  --color-outline-focus: var(--color-primary-400);
+
+  /* -------------------------------------------------------------------------
+     COLOR — Text Hierarchy
+     ------------------------------------------------------------------------- */
+  --color-text-primary:   var(--color-neutral-900);
+  --color-text-secondary: var(--color-neutral-500);
+  --color-text-muted:     var(--color-neutral-400);
+  --color-text-inverse:   #ffffff;
+  --color-text-link:      var(--color-primary-600);
+  --color-text-link-hover:var(--color-primary-700);
+
+  /* -------------------------------------------------------------------------
+     TYPOGRAPHY — Font Families
+     ------------------------------------------------------------------------- */
+  --font-heading: 'Plus Jakarta Sans', system-ui, sans-serif;
+  --font-body:    'Inter', system-ui, sans-serif;
+  --font-mono:    'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+
+  /* -------------------------------------------------------------------------
+     TYPOGRAPHY — Type Scale
+     ------------------------------------------------------------------------- */
+  --text-xs:   0.75rem;    /* 12px */
+  --text-sm:   0.875rem;   /* 14px */
+  --text-base: 1rem;       /* 16px */
+  --text-md:   1.0625rem;  /* 17px */
+  --text-lg:   1.125rem;   /* 18px */
+  --text-xl:   1.25rem;    /* 20px */
+  --text-2xl:  1.5rem;     /* 24px */
+  --text-3xl:  1.875rem;   /* 30px */
+  --text-4xl:  2.25rem;    /* 36px */
+  --text-5xl:  3rem;       /* 48px */
+
+  /* -------------------------------------------------------------------------
+     TYPOGRAPHY — Line Heights
+     ------------------------------------------------------------------------- */
+  --leading-tight:   1.25;
+  --leading-snug:    1.375;
+  --leading-normal:  1.5;
+  --leading-relaxed: 1.625;
+  --leading-loose:   2;
+
+  /* -------------------------------------------------------------------------
+     TYPOGRAPHY — Font Weights
+     ------------------------------------------------------------------------- */
+  --weight-regular:   400;
+  --weight-medium:    500;
+  --weight-semibold:  600;
+  --weight-bold:      700;
+  --weight-extrabold: 800;
+
+  /* -------------------------------------------------------------------------
+     TYPOGRAPHY — Letter Spacing
+     ------------------------------------------------------------------------- */
+  --tracking-tight:  -0.025em;
+  --tracking-normal:  0em;
+  --tracking-wide:    0.025em;
+  --tracking-wider:   0.05em;
+  --tracking-widest:  0.1em;
+
+  /* -------------------------------------------------------------------------
+     SPACING — 8px rhythm
+     ------------------------------------------------------------------------- */
+  --space-0:   0px;
+  --space-px:  1px;
+  --space-0-5: 4px;    /* 0.5 × 8 */
+  --space-1:   8px;
+  --space-1-5: 12px;
+  --space-2:   16px;
+  --space-2-5: 20px;
+  --space-3:   24px;
+  --space-4:   32px;
+  --space-5:   40px;
+  --space-6:   48px;
+  --space-7:   56px;
+  --space-8:   64px;
+  --space-10:  80px;
+  --space-12:  96px;
+  --space-16:  128px;
+  --space-20:  160px;
+
+  /* -------------------------------------------------------------------------
+     BORDER RADIUS
+     ------------------------------------------------------------------------- */
+  --radius-none: 0px;
+  --radius-sm:   4px;
+  --radius-md:   6px;
+  --radius-lg:   8px;
+  --radius-xl:   10px;
+  --radius-2xl:  14px;
+  --radius-3xl:  20px;
+  --radius-full: 9999px;
+
+  /* -------------------------------------------------------------------------
+     ELEVATION — restrained, border-first, minimal shadows
+     AcaSocial is NOT a high-elevation SaaS dashboard.
+     ------------------------------------------------------------------------- */
+  --shadow-none:    none;
+  --shadow-xs:      0 1px 2px 0 rgb(0 0 0 / 0.04);
+  --shadow-sm:      0 1px 3px 0 rgb(0 0 0 / 0.06), 0 1px 2px -1px rgb(0 0 0 / 0.04);
+  --shadow-md:      0 4px 6px -1px rgb(0 0 0 / 0.06), 0 2px 4px -2px rgb(0 0 0 / 0.04);
+  --shadow-lg:      0 10px 15px -3px rgb(0 0 0 / 0.06), 0 4px 6px -4px rgb(0 0 0 / 0.04);
+  --shadow-focus:   0 0 0 3px rgb(192 57 43 / 0.2);
+
+  /* -------------------------------------------------------------------------
+     LAYOUT
+     ------------------------------------------------------------------------- */
+  --container-max:    1280px;
+  --container-narrow: 720px;
+  --sidebar-width:    220px;
+  --right-rail-width: 280px;
+  --header-height:    56px;
+
+  /* -------------------------------------------------------------------------
+     TRANSITIONS
+     ------------------------------------------------------------------------- */
+  --transition-fast:   100ms ease;
+  --transition-base:   150ms ease;
+  --transition-slow:   250ms ease;
+  --transition-slower: 350ms ease;
+
+  /* -------------------------------------------------------------------------
+     Z-INDEX
+     ------------------------------------------------------------------------- */
+  --z-base:    0;
+  --z-raised:  10;
+  --z-dropdown:100;
+  --z-sticky:  200;
+  --z-overlay: 300;
+  --z-modal:   400;
+  --z-toast:   500;
+}

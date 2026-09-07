@@ -33,6 +33,25 @@
 
     { "endpoint": "/api/media/upload",  "method": "POST",   "auth_required": true,  "backend": [{ "host": ["${MEDIA_SERVICE_URL}"], "url_pattern": "/media/upload" }] },
     { "endpoint": "/api/media/{id}",    "method": "GET",    "auth_required": false, "backend": [{ "host": ["${MEDIA_SERVICE_URL}"], "url_pattern": "/media/{id}" }] },
-    { "endpoint": "/api/media/{id}",    "method": "DELETE", "auth_required": true,  "backend": [{ "host": ["${MEDIA_SERVICE_URL}"], "url_pattern": "/media/{id}" }] }
+    { "endpoint": "/api/media/{id}",    "method": "DELETE", "auth_required": true,  "backend": [{ "host": ["${MEDIA_SERVICE_URL}"], "url_pattern": "/media/{id}" }] },
+
+    { "endpoint": "/api/discussions",           "method": "GET",    "auth_required": false, "backend": [{ "host": ["${DISCUSSION_SERVICE_URL}"], "url_pattern": "/discussions" }] },
+    { "endpoint": "/api/discussions",           "method": "POST",   "auth_required": true,  "backend": [{ "host": ["${DISCUSSION_SERVICE_URL}"], "url_pattern": "/discussions" }] },
+    { "endpoint": "/api/discussions/{id}",      "method": "GET",    "auth_required": false, "backend": [{ "host": ["${DISCUSSION_SERVICE_URL}"], "url_pattern": "/discussions/{id}" }] },
+    { "endpoint": "/api/discussions/{id}",      "method": "PATCH",  "auth_required": true,  "backend": [{ "host": ["${DISCUSSION_SERVICE_URL}"], "url_pattern": "/discussions/{id}" }] },
+    { "endpoint": "/api/discussions/{id}",      "method": "DELETE", "auth_required": true,  "backend": [{ "host": ["${DISCUSSION_SERVICE_URL}"], "url_pattern": "/discussions/{id}" }] },
+    { "endpoint": "/api/discussions/{id}/accept",  "method": "PATCH",  "auth_required": true, "backend": [{ "host": ["${DISCUSSION_SERVICE_URL}"], "url_pattern": "/discussions/{id}/accept" }] },
+    { "endpoint": "/api/discussions/{id}/accept",  "method": "DELETE", "auth_required": true, "backend": [{ "host": ["${DISCUSSION_SERVICE_URL}"], "url_pattern": "/discussions/{id}/accept" }] },
+    { "endpoint": "/api/discussions/{id}/vote",    "method": "POST",   "auth_required": true, "backend": [{ "host": ["${DISCUSSION_SERVICE_URL}"], "url_pattern": "/discussions/{id}/vote" }] },
+    { "endpoint": "/api/discussions/{id}/vote",    "method": "DELETE", "auth_required": true, "backend": [{ "host": ["${DISCUSSION_SERVICE_URL}"], "url_pattern": "/discussions/{id}/vote" }] },
+    { "endpoint": "/api/discussions/{id}/comments","method": "GET",    "auth_required": false, "backend": [{ "host": ["${DISCUSSION_SERVICE_URL}"], "url_pattern": "/discussions/{id}/comments" }] },
+    { "endpoint": "/api/discussions/{id}/comments","method": "POST",   "auth_required": true,  "backend": [{ "host": ["${DISCUSSION_SERVICE_URL}"], "url_pattern": "/discussions/{id}/comments" }] },
+    { "endpoint": "/api/comments/{id}",         "method": "PATCH",  "auth_required": true,  "backend": [{ "host": ["${DISCUSSION_SERVICE_URL}"], "url_pattern": "/comments/{id}" }] },
+    { "endpoint": "/api/comments/{id}",         "method": "DELETE", "auth_required": true,  "backend": [{ "host": ["${DISCUSSION_SERVICE_URL}"], "url_pattern": "/comments/{id}" }] },
+    { "endpoint": "/api/comments/{id}/vote",    "method": "POST",   "auth_required": true,  "backend": [{ "host": ["${DISCUSSION_SERVICE_URL}"], "url_pattern": "/comments/{id}/vote" }] },
+    { "endpoint": "/api/comments/{id}/vote",    "method": "DELETE", "auth_required": true,  "backend": [{ "host": ["${DISCUSSION_SERVICE_URL}"], "url_pattern": "/comments/{id}/vote" }] },
+    { "endpoint": "/api/tags",                  "method": "GET",    "auth_required": false, "backend": [{ "host": ["${DISCUSSION_SERVICE_URL}"], "url_pattern": "/tags" }] },
+    { "endpoint": "/api/tags/{id}",             "method": "GET",    "auth_required": false, "backend": [{ "host": ["${DISCUSSION_SERVICE_URL}"], "url_pattern": "/tags/{id}" }] }
   ]
 }
+
